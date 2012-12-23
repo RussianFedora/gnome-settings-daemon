@@ -1,6 +1,6 @@
 Name:           gnome-settings-daemon
 Version:        3.6.4
-Release:        0.1.20121208git87b1afa%{?dist}
+Release:        0.2.20121208git87b1afa%{?dist}
 Summary:        The daemon sharing settings from GNOME to GTK+/KDE applications
 
 Group:          System Environment/Daemons
@@ -17,6 +17,9 @@ Patch2: 0001-power-and-media-keys-Use-logind-for-suspending-and-r.patch
 Patch3: 0001-wacom-implement-OSD-help-window.patch
 # fix https://bugzilla.gnome.org/show_bug.cgi?id=643111
 Patch4: gnome-settings-daemon-XI-RawEvents.patch
+
+# https://bugzilla.redhat.com/show_bug.cgi?id=873103
+Patch5: 0001-keyboard-Make-ibus-libpinyin-the-default-engine-for-.patch
 
 Requires: control-center-filesystem
 
@@ -87,6 +90,7 @@ The %{name}-updates package contains the updates plugin for %{name}
 %patch2 -p1
 %patch3 -p1 -b .wacom-osd-window
 %patch4 -p1
+%patch5 -p1
 
 #autoreconf -i -f
 
@@ -268,6 +272,9 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_datadir}/dbus-1/interfaces/org.gnome.SettingsDaemonUpdates.xml
 
 %changelog
+* Mon Dec 24 2012 Arkady L. Shane <ashejn@russianfedora.ru> - 3.6.4-0.2.20121208git87b1afa.R
+- Add patch to fix bug #873103
+
 * Sun Dec  9 2012 Arkady L. Shane <ashejn@russianfedora.ru> - 3.6.4-0.1.20121208git87b1afa.R
 - update to last upstream
 - fix https://bugzilla.gnome.org/show_bug.cgi?id=643111
