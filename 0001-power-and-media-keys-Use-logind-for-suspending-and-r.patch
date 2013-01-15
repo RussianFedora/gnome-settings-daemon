@@ -1,6 +1,48 @@
-diff -urN gnome-settings-daemon-3.6.4.orig/plugins/common/gsd-power-helper.c gnome-settings-daemon-3.6.4/plugins/common/gsd-power-helper.c
---- gnome-settings-daemon-3.6.4.orig/plugins/common/gsd-power-helper.c	2012-12-09 02:23:52.394666588 +0400
-+++ gnome-settings-daemon-3.6.4/plugins/common/gsd-power-helper.c	1970-01-01 03:00:00.000000000 +0300
+From e58c5ac50255bff1c88040907439d1390b00e740 Mon Sep 17 00:00:00 2001
+From: Richard Hughes <richard@hughsie.com>
+Date: Fri, 21 Sep 2012 11:56:53 +0100
+Subject: [PATCH] power and media-keys: Use logind for suspending and rebooting
+ the system
+
+Use the new logind features to suspend and resume but making sure we opt out
+of logind handling the sleep and power keys, and also inhibiting for lid close
+auto-suspend if there is an external monitor connected.
+
+Also use a delay inihibit for logind so that we can do actions on suspend like
+blanking the screen using the screensaver and also poking the screensaver on
+resume.
+
+https://bugzilla.gnome.org/show_bug.cgi?id=680689
+---
+ plugins/common/Makefile.am                  |   4 +-
+ plugins/common/gsd-power-helper.c           | 203 --------
+ plugins/common/gsd-power-helper.h           |  35 --
+ plugins/media-keys/gsd-media-keys-manager.c | 156 +++++--
+ plugins/power/gsd-power-manager.c           | 698 +++++++++++++++++++---------
+ 5 files changed, 595 insertions(+), 501 deletions(-)
+ delete mode 100644 plugins/common/gsd-power-helper.c
+ delete mode 100644 plugins/common/gsd-power-helper.h
+
+diff --git a/plugins/common/Makefile.am b/plugins/common/Makefile.am
+index 7e50db4..b0e907c 100644
+--- a/plugins/common/Makefile.am
++++ b/plugins/common/Makefile.am
+@@ -6,9 +6,7 @@ libcommon_la_SOURCES = \
+ 	gsd-keygrab.c		\
+ 	gsd-keygrab.h		\
+ 	gsd-input-helper.c	\
+-	gsd-input-helper.h	\
+-	gsd-power-helper.c	\
+-	gsd-power-helper.h
++	gsd-input-helper.h
+ 
+ libcommon_la_CPPFLAGS = \
+ 	$(AM_CPPFLAGS)
+diff --git a/plugins/common/gsd-power-helper.c b/plugins/common/gsd-power-helper.c
+deleted file mode 100644
+index 27d0eda..0000000
+--- a/plugins/common/gsd-power-helper.c
++++ /dev/null
 @@ -1,203 +0,0 @@
 -/* -*- Mode: C; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 8 -*-
 - *
@@ -205,9 +247,11 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/common/gsd-power-helper.c gno
 -	upower_hibernate (upower_proxy);
 -#endif
 -}
-diff -urN gnome-settings-daemon-3.6.4.orig/plugins/common/gsd-power-helper.h gnome-settings-daemon-3.6.4/plugins/common/gsd-power-helper.h
---- gnome-settings-daemon-3.6.4.orig/plugins/common/gsd-power-helper.h	2012-12-09 02:23:52.394666588 +0400
-+++ gnome-settings-daemon-3.6.4/plugins/common/gsd-power-helper.h	1970-01-01 03:00:00.000000000 +0300
+diff --git a/plugins/common/gsd-power-helper.h b/plugins/common/gsd-power-helper.h
+deleted file mode 100644
+index e3be14f..0000000
+--- a/plugins/common/gsd-power-helper.h
++++ /dev/null
 @@ -1,35 +0,0 @@
 -/* -*- Mode: C; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 8 -*-
 - *
@@ -244,23 +288,10 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/common/gsd-power-helper.h gno
 -G_END_DECLS
 -
 -#endif /* __GSD_POWER_HELPER_H */
-diff -urN gnome-settings-daemon-3.6.4.orig/plugins/common/Makefile.am gnome-settings-daemon-3.6.4/plugins/common/Makefile.am
---- gnome-settings-daemon-3.6.4.orig/plugins/common/Makefile.am	2012-12-09 02:23:52.394666588 +0400
-+++ gnome-settings-daemon-3.6.4/plugins/common/Makefile.am	2012-12-09 02:24:07.353605334 +0400
-@@ -6,9 +6,7 @@
- 	gsd-keygrab.c		\
- 	gsd-keygrab.h		\
- 	gsd-input-helper.c	\
--	gsd-input-helper.h	\
--	gsd-power-helper.c	\
--	gsd-power-helper.h
-+	gsd-input-helper.h
- 
- libcommon_la_CPPFLAGS = \
- 	$(AM_CPPFLAGS)
-diff -urN gnome-settings-daemon-3.6.4.orig/plugins/media-keys/gsd-media-keys-manager.c gnome-settings-daemon-3.6.4/plugins/media-keys/gsd-media-keys-manager.c
---- gnome-settings-daemon-3.6.4.orig/plugins/media-keys/gsd-media-keys-manager.c	2012-12-09 02:23:52.395666584 +0400
-+++ gnome-settings-daemon-3.6.4/plugins/media-keys/gsd-media-keys-manager.c	2012-12-09 02:24:07.356605324 +0400
+diff --git a/plugins/media-keys/gsd-media-keys-manager.c b/plugins/media-keys/gsd-media-keys-manager.c
+index ef97cd7..ddf6153 100644
+--- a/plugins/media-keys/gsd-media-keys-manager.c
++++ b/plugins/media-keys/gsd-media-keys-manager.c
 @@ -39,6 +39,7 @@
  #include <gdk/gdkx.h>
  #include <gtk/gtk.h>
@@ -277,7 +308,7 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/media-keys/gsd-media-keys-man
  #include "gsd-enums.h"
  
  #include <canberra.h>
-@@ -105,6 +105,10 @@
+@@ -105,6 +105,10 @@ static const gchar introspection_xml[] =
  #define KEY_CURRENT_INPUT_SOURCE "current"
  #define KEY_INPUT_SOURCES        "sources"
  
@@ -288,7 +319,7 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/media-keys/gsd-media-keys-man
  #define GSD_MEDIA_KEYS_MANAGER_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), GSD_TYPE_MEDIA_KEYS_MANAGER, GsdMediaKeysManagerPrivate))
  
  typedef struct {
-@@ -148,10 +152,13 @@
+@@ -148,10 +152,13 @@ struct GsdMediaKeysManagerPrivate
  
          /* Power stuff */
          GSettings       *power_settings;
@@ -303,7 +334,7 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/media-keys/gsd-media-keys-man
          /* Multihead stuff */
          GdkScreen       *current_screen;
          GSList          *screens;
-@@ -1618,6 +1625,38 @@
+@@ -1618,6 +1625,38 @@ do_toggle_contrast_action (GsdMediaKeysManager *manager)
  }
  
  static void
@@ -342,7 +373,7 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/media-keys/gsd-media-keys-man
  do_config_power_action (GsdMediaKeysManager *manager,
                          const gchar *config_key)
  {
-@@ -1627,14 +1666,14 @@
+@@ -1627,14 +1666,14 @@ do_config_power_action (GsdMediaKeysManager *manager,
                                             config_key);
          switch (action_type) {
          case GSD_POWER_ACTION_SUSPEND:
@@ -359,7 +390,7 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/media-keys/gsd-media-keys-man
                  break;
          case GSD_POWER_ACTION_BLANK:
          case GSD_POWER_ACTION_NOTHING:
-@@ -2248,6 +2287,7 @@
+@@ -2252,6 +2291,7 @@ gsd_media_keys_manager_stop (GsdMediaKeysManager *manager)
          }
  #endif /* HAVE_GUDEV */
  
@@ -367,7 +398,7 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/media-keys/gsd-media-keys-man
          if (priv->settings) {
                  g_object_unref (priv->settings);
                  priv->settings = NULL;
-@@ -2268,11 +2308,6 @@
+@@ -2272,11 +2312,6 @@ gsd_media_keys_manager_stop (GsdMediaKeysManager *manager)
                  priv->power_keyboard_proxy = NULL;
          }
  
@@ -379,7 +410,7 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/media-keys/gsd-media-keys-man
          if (priv->cancellable != NULL) {
                  g_cancellable_cancel (priv->cancellable);
                  g_object_unref (priv->cancellable);
-@@ -2363,9 +2398,85 @@
+@@ -2367,9 +2402,85 @@ gsd_media_keys_manager_class_init (GsdMediaKeysManagerClass *klass)
  }
  
  static void
@@ -465,7 +496,7 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/media-keys/gsd-media-keys-man
  }
  
  static void
-@@ -2382,6 +2493,8 @@
+@@ -2386,6 +2497,8 @@ gsd_media_keys_manager_finalize (GObject *object)
  
          if (media_keys_manager->priv->start_idle_id != 0)
                  g_source_remove (media_keys_manager->priv->start_idle_id);
@@ -474,7 +505,7 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/media-keys/gsd-media-keys-man
  
          G_OBJECT_CLASS (gsd_media_keys_manager_parent_class)->finalize (object);
  }
-@@ -2401,21 +2514,6 @@
+@@ -2405,21 +2518,6 @@ xrandr_ready_cb (GObject             *source_object,
  }
  
  static void
@@ -496,7 +527,7 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/media-keys/gsd-media-keys-man
  power_screen_ready_cb (GObject             *source_object,
                         GAsyncResult        *res,
                         GsdMediaKeysManager *manager)
-@@ -2517,16 +2615,6 @@
+@@ -2521,16 +2619,6 @@ register_manager (GsdMediaKeysManager *manager)
                     manager->priv->bus_cancellable,
                     (GAsyncReadyCallback) on_bus_gotten,
                     manager);
@@ -513,9 +544,10 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/media-keys/gsd-media-keys-man
  }
  
  GsdMediaKeysManager *
-diff -urN gnome-settings-daemon-3.6.4.orig/plugins/power/gsd-power-manager.c gnome-settings-daemon-3.6.4/plugins/power/gsd-power-manager.c
---- gnome-settings-daemon-3.6.4.orig/plugins/power/gsd-power-manager.c	2012-12-09 02:23:52.393666592 +0400
-+++ gnome-settings-daemon-3.6.4/plugins/power/gsd-power-manager.c	2012-12-09 02:30:01.371272090 +0400
+diff --git a/plugins/power/gsd-power-manager.c b/plugins/power/gsd-power-manager.c
+index 4181a4a..4abf610 100644
+--- a/plugins/power/gsd-power-manager.c
++++ b/plugins/power/gsd-power-manager.c
 @@ -1,7 +1,7 @@
  /* -*- Mode: C; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 8 -*-
   *
@@ -552,7 +584,7 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/power/gsd-power-manager.c gno
  /* Keep this in sync with gnome-shell */
  #define SCREENSAVER_FADE_TIME                           10 /* seconds */
  
-@@ -193,15 +197,21 @@
+@@ -193,15 +197,21 @@ struct GsdPowerManagerPrivate
          ca_context              *canberra_context;
          ca_proplist             *critical_alert_loop_props;
          guint32                  critical_alert_timeout_id;
@@ -576,7 +608,7 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/power/gsd-power-manager.c gno
  };
  
  enum {
-@@ -218,8 +228,8 @@
+@@ -218,8 +228,8 @@ static GIcon    *engine_get_icon (GsdPowerManager *manager);
  static gchar    *engine_get_summary (GsdPowerManager *manager);
  static void      do_power_action_type (GsdPowerManager *manager, GsdPowerActionType action_type);
  static void      do_lid_closed_action (GsdPowerManager *manager);
@@ -587,7 +619,7 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/power/gsd-power-manager.c gno
  
  G_DEFINE_TYPE (GsdPowerManager, gsd_power_manager, G_TYPE_OBJECT)
  
-@@ -2085,6 +2095,57 @@
+@@ -2085,6 +2095,57 @@ gnome_session_shutdown (void)
  }
  
  static void
@@ -645,7 +677,7 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/power/gsd-power-manager.c gno
  do_power_action_type (GsdPowerManager *manager,
                        GsdPowerActionType action_type)
  {
-@@ -2093,19 +2154,19 @@
+@@ -2093,19 +2154,19 @@ do_power_action_type (GsdPowerManager *manager,
  
          switch (action_type) {
          case GSD_POWER_ACTION_SUSPEND:
@@ -668,7 +700,7 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/power/gsd-power-manager.c gno
                  break;
          case GSD_POWER_ACTION_BLANK:
                  ret = gnome_rr_screen_set_dpms_mode (manager->priv->x11_screen,
-@@ -2177,85 +2238,20 @@
+@@ -2177,85 +2238,20 @@ upower_kbd_toggle (GsdPowerManager *manager,
          return ret;
  }
  
@@ -764,7 +796,7 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/power/gsd-power-manager.c gno
  }
  
  /* Sets up a timer to be triggered some seconds after closing the laptop lid
-@@ -2263,82 +2259,71 @@
+@@ -2263,82 +2259,73 @@ lid_close_safety_timer_cb (GsdPowerManager *manager)
   * again in the timeout handler to see if we can suspend then.
   */
  static void
@@ -772,21 +804,20 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/power/gsd-power-manager.c gno
 +setup_inhibit_lid_switch_timer (GsdPowerManager *manager)
  {
 -        if (manager->priv->lid_close_safety_timer_id != 0)
--                return;
-+       if (manager->priv->inhibit_lid_switch_timer_id != 0) {
-+               g_debug ("lid close safety timer already set up");
-+               return;
-+       }
++        if (manager->priv->inhibit_lid_switch_timer_id != 0) {
++                g_debug ("lid close safety timer already set up");
+                 return;
++        }
++
++        g_debug ("setting up lid close safety timer");
  
 -        manager->priv->lid_close_safety_timer_id = g_timeout_add_seconds (GSD_POWER_MANAGER_LID_CLOSE_SAFETY_TIMEOUT,
 -                                                                          (GSourceFunc) lid_close_safety_timer_cb,
--                                                                          manager);
++        manager->priv->inhibit_lid_switch_timer_id = g_timeout_add_seconds (GSD_POWER_MANAGER_LID_CLOSE_SAFETY_TIMEOUT,
++                                                                          (GSourceFunc) inhibit_lid_switch_timer_cb,
+                                                                           manager);
 -        g_source_set_name_by_id (manager->priv->lid_close_safety_timer_id, "[GsdPowerManager] lid close safety timer");
-+       g_debug ("setting up lid close safety timer");
-+       manager->priv->inhibit_lid_switch_timer_id = g_timeout_add_seconds (GSD_POWER_MANAGER_LID_CLOSE_SAFETY_TIMEOUT,
-+                                                                         (GSourceFunc) inhibit_lid_switch_timer_cb,
-+                                                                         manager);
-+       g_source_set_name_by_id (manager->priv->inhibit_lid_switch_timer_id, "[GsdPowerManager] lid close safety timer");
++        g_source_set_name_by_id (manager->priv->inhibit_lid_switch_timer_id, "[GsdPowerManager] lid close safety timer");
  }
  
  static void
@@ -796,11 +827,11 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/power/gsd-power-manager.c gno
 -        if (manager->priv->lid_close_safety_timer_id != 0) {
 -                g_source_remove (manager->priv->lid_close_safety_timer_id);
 -                manager->priv->lid_close_safety_timer_id = 0;
-+       if (manager->priv->inhibit_lid_switch_timer_id != 0) {
-+               g_debug ("restarting lid close safety timer");
-+               g_source_remove (manager->priv->inhibit_lid_switch_timer_id);
-+               manager->priv->inhibit_lid_switch_timer_id = 0;
-+               setup_inhibit_lid_switch_timer (manager);
++        if (manager->priv->inhibit_lid_switch_timer_id != 0) {
++                g_debug ("restarting lid close safety timer");
++                g_source_remove (manager->priv->inhibit_lid_switch_timer_id);
++                manager->priv->inhibit_lid_switch_timer_id = 0;
++                setup_inhibit_lid_switch_timer (manager);
          }
  }
  
@@ -811,7 +842,7 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/power/gsd-power-manager.c gno
          gboolean ret;
          GError *error = NULL;
 -        GsdPowerActionType action_type;
--
+ 
 -        /* maybe lock the screen if the lid is closed */
 -        lock_screensaver (manager);
 -
@@ -880,7 +911,7 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/power/gsd-power-manager.c gno
          /* play a sound, using sounds from the naming spec */
          ca_context_play (manager->priv->canberra_context, 0,
                           CA_PROP_EVENT_ID, "lid-close",
-@@ -2346,21 +2331,22 @@
+@@ -2346,21 +2333,22 @@ do_lid_closed_action (GsdPowerManager *manager)
                           CA_PROP_EVENT_DESCRIPTION, _("Lid has been closed"),
                           NULL);
  
@@ -913,7 +944,7 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/power/gsd-power-manager.c gno
  static void
  up_client_changed_cb (UpClient *client, GsdPowerManager *manager)
  {
-@@ -2380,6 +2366,7 @@
+@@ -2380,6 +2368,7 @@ up_client_changed_cb (UpClient *client, GsdPowerManager *manager)
          if (manager->priv->lid_is_closed == tmp)
                  return;
          manager->priv->lid_is_closed = tmp;
@@ -921,7 +952,7 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/power/gsd-power-manager.c gno
  
          /* fake a keypress */
          if (tmp)
-@@ -3338,30 +3325,6 @@
+@@ -3338,30 +3327,6 @@ gsd_power_manager_class_init (GsdPowerManagerClass *klass)
  }
  
  static void
@@ -952,7 +983,7 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/power/gsd-power-manager.c gno
  idle_dbus_signal_cb (GDBusProxy *proxy,
                       const gchar *sender_name,
                       const gchar *signal_name,
-@@ -3515,75 +3478,38 @@
+@@ -3515,75 +3480,38 @@ out:
  }
  
  static void
@@ -1052,7 +1083,7 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/power/gsd-power-manager.c gno
  }
  
  static void
-@@ -3793,6 +3719,287 @@
+@@ -3793,6 +3721,287 @@ out:
          return ret;
  }
  
@@ -1340,9 +1371,9 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/power/gsd-power-manager.c gno
  gboolean
  gsd_power_manager_start (GsdPowerManager *manager,
                           GError **error)
-@@ -3802,11 +4009,34 @@
-         g_debug ("Starting power manager");
-         gnome_settings_profile_start (NULL);
+@@ -3807,6 +4016,25 @@ gsd_power_manager_start (GsdPowerManager *manager,
+         if (manager->priv->x11_screen == NULL)
+                 return FALSE;
  
 +        manager->priv->logind_proxy =
 +                g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SYSTEM,
@@ -1363,19 +1394,10 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/power/gsd-power-manager.c gno
 +        /* Set up a delay inhibitor to be informed about suspend attempts */
 +        inhibit_suspend (manager);
 +
-         /* coldplug the list of screens */
-         manager->priv->x11_screen = gnome_rr_screen_new (gdk_screen_get_default (), error);
-         if (manager->priv->x11_screen == NULL)
-                 return FALSE;
- 
-+        g_signal_connect (manager->priv->x11_screen, "changed", G_CALLBACK (on_randr_event), manager);
-+        /* set up initial state */
-+        on_randr_event (manager->priv->x11_screen, manager);
-+
          /* track the active session */
          manager->priv->session = gnome_settings_session_new ();
          g_signal_connect (manager->priv->session, "notify::state",
-@@ -3821,10 +4051,6 @@
+@@ -3821,10 +4049,6 @@ gsd_power_manager_start (GsdPowerManager *manager,
                            G_CALLBACK (engine_settings_key_changed_cb), manager);
          manager->priv->settings_screensaver = g_settings_new ("org.gnome.desktop.screensaver");
          manager->priv->up_client = up_client_new ();
@@ -1386,7 +1408,18 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/power/gsd-power-manager.c gno
          manager->priv->lid_is_closed = up_client_get_lid_is_closed (manager->priv->up_client);
          g_signal_connect (manager->priv->up_client, "device-added",
                            G_CALLBACK (engine_device_added_cb), manager);
-@@ -3964,6 +4190,11 @@
+@@ -3934,6 +4158,10 @@ gsd_power_manager_start (GsdPowerManager *manager,
+         g_signal_connect (manager->priv->idletime, "alarm-expired",
+                           G_CALLBACK (idle_idletime_alarm_expired_cb), manager);
+ 
++        g_signal_connect (manager->priv->x11_screen, "changed", G_CALLBACK (on_randr_event), manager);
++        /* set up initial state */
++        on_randr_event (manager->priv->x11_screen, manager);
++
+         /* ensure the default dpms timeouts are cleared */
+         ret = gnome_rr_screen_set_dpms_mode (manager->priv->x11_screen,
+                                              GNOME_RR_DPMS_ON,
+@@ -3964,6 +4192,11 @@ gsd_power_manager_stop (GsdPowerManager *manager)
  {
          g_debug ("Stopping power manager");
  
@@ -1398,7 +1431,7 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/power/gsd-power-manager.c gno
          if (manager->priv->bus_cancellable != NULL) {
                  g_cancellable_cancel (manager->priv->bus_cancellable);
                  g_object_unref (manager->priv->bus_cancellable);
-@@ -3975,8 +4206,6 @@
+@@ -3975,8 +4208,6 @@ gsd_power_manager_stop (GsdPowerManager *manager)
                  manager->priv->introspection_data = NULL;
          }
  
@@ -1407,7 +1440,7 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/power/gsd-power-manager.c gno
          g_signal_handlers_disconnect_by_data (manager->priv->up_client, manager);
  
          g_clear_object (&manager->priv->connection);
-@@ -3984,6 +4213,19 @@
+@@ -3984,6 +4215,19 @@ gsd_power_manager_stop (GsdPowerManager *manager)
          g_clear_object (&manager->priv->settings);
          g_clear_object (&manager->priv->settings_screensaver);
          g_clear_object (&manager->priv->up_client);
@@ -1427,7 +1460,7 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/power/gsd-power-manager.c gno
          g_clear_object (&manager->priv->x11_screen);
  
          g_ptr_array_unref (manager->priv->devices_array);
-@@ -4017,6 +4259,8 @@
+@@ -4017,6 +4261,8 @@ static void
  gsd_power_manager_init (GsdPowerManager *manager)
  {
          manager->priv = GSD_POWER_MANAGER_GET_PRIVATE (manager);
@@ -1436,3 +1469,6 @@ diff -urN gnome-settings-daemon-3.6.4.orig/plugins/power/gsd-power-manager.c gno
  }
  
  static void
+-- 
+1.8.0.2
+

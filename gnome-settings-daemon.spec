@@ -1,13 +1,13 @@
 Name:           gnome-settings-daemon
 Version:        3.6.4
-Release:        0.2.20121208git87b1afa%{?dist}
+Release:        2%{?dist}
 Summary:        The daemon sharing settings from GNOME to GTK+/KDE applications
 
 Group:          System Environment/Daemons
 License:        GPLv2+
 URL:            http://download.gnome.org/sources/%{name}
 #VCS: git:git://git.gnome.org/gnome-settings-daemon
-Source:         %{name}-%{version}-20121208git87b1afa.tar.xz
+Source:         http://download.gnome.org/sources/%{name}/3.6/%{name}-%{version}.tar.xz
 # disable wacom for ppc/ppc64 (used on RHEL)
 Patch0:         %{name}-3.5.4-ppc-no-wacom.patch
 # https://bugzilla.gnome.org/show_bug.cgi?id=680689
@@ -15,11 +15,10 @@ Patch2: 0001-power-and-media-keys-Use-logind-for-suspending-and-r.patch
 # Wacom OSD window
 # https://bugzilla.gnome.org/show_bug.cgi?id=679062
 Patch3: 0001-wacom-implement-OSD-help-window.patch
-# fix https://bugzilla.gnome.org/show_bug.cgi?id=643111
-Patch4: gnome-settings-daemon-XI-RawEvents.patch
-
 # https://bugzilla.redhat.com/show_bug.cgi?id=873103
-Patch5: 0001-keyboard-Make-ibus-libpinyin-the-default-engine-for-.patch
+Patch4: 0001-keyboard-Make-ibus-libpinyin-the-default-engine-for-.patch
+# fix https://bugzilla.gnome.org/show_bug.cgi?id=643111
+Patch5: gnome-settings-daemon-XI-RawEvents.patch
 
 Requires: control-center-filesystem
 
@@ -53,7 +52,6 @@ BuildRequires:  libxkbfile-devel
 BuildRequires:  ibus-devel
 BuildRequires:  libxslt
 BuildRequires:  docbook-style-xsl
-BuildRequires:  gnome-common
 %ifnarch s390 s390x %{?rhel:ppc ppc64}
 BuildRequires:  libwacom-devel
 BuildRequires:  xorg-x11-drv-wacom-devel
@@ -92,10 +90,9 @@ The %{name}-updates package contains the updates plugin for %{name}
 %patch4 -p1
 %patch5 -p1
 
-#autoreconf -i -f
+autoreconf -i -f
 
 %build
-./autogen.sh
 %configure --disable-static \
            --enable-profiling \
            --enable-packagekit \
@@ -186,11 +183,11 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_libdir}/gnome-settings-daemon-3.0/libsound.so
 
 %{_datadir}/glib-2.0/schemas/org.gnome.settings-daemon.peripherals.gschema.xml
+%{_datadir}/glib-2.0/schemas/org.gnome.settings-daemon.peripherals.wacom.gschema.xml
 
 %ifnarch s390 s390x %{?rhel:ppc ppc64}
 %{_libdir}/gnome-settings-daemon-3.0/wacom.gnome-settings-plugin
 %{_libdir}/gnome-settings-daemon-3.0/libgsdwacom.so
-%{_datadir}/glib-2.0/schemas/org.gnome.settings-daemon.peripherals.wacom.gschema.xml
 %{_libexecdir}/gsd-wacom-led-helper
 %{_datadir}/polkit-1/actions/org.gnome.settings-daemon.plugins.wacom.policy
 %endif
@@ -217,16 +214,15 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_libdir}/gnome-settings-daemon-3.0/libcursor.so
 %{_libdir}/gnome-settings-daemon-3.0/cursor.gnome-settings-plugin
 
-%{_libdir}/gnome-settings-daemon-3.0/libgsd.so
-
 %{_libdir}/gnome-settings-daemon-3.0/libscreensaver-proxy.so
 %{_libdir}/gnome-settings-daemon-3.0/screensaver-proxy.gnome-settings-plugin
+
+%{_libdir}/gnome-settings-daemon-3.0/libgsd.so
 
 %{_libexecdir}/gnome-settings-daemon
 %{_libexecdir}/gsd-locate-pointer
 %{_libexecdir}/gsd-printer
 %{_libexecdir}/gsd-input-sources-switcher
-%{_libexecdir}/gsd-test-screensaver-proxy
 
 %{_datadir}/gnome-settings-daemon/
 %{_sysconfdir}/xdg/autostart/gnome-settings-daemon.desktop
@@ -261,6 +257,7 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_libexecdir}/gsd-test-orientation
 %{_libexecdir}/gsd-test-power
 %{_libexecdir}/gsd-test-print-notifications
+%{_libexecdir}/gsd-test-screensaver-proxy
 %{_libexecdir}/gsd-test-smartcard
 %{_libexecdir}/gsd-test-sound
 %{_libexecdir}/gsd-test-xsettings
@@ -272,12 +269,18 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_datadir}/dbus-1/interfaces/org.gnome.SettingsDaemonUpdates.xml
 
 %changelog
-* Mon Dec 24 2012 Arkady L. Shane <ashejn@russianfedora.ru> - 3.6.4-0.2.20121208git87b1afa.R
-- Add patch to fix bug #873103
-
-* Sun Dec  9 2012 Arkady L. Shane <ashejn@russianfedora.ru> - 3.6.4-0.1.20121208git87b1afa.R
-- update to last upstream
+* Tue Jan 15 2013 Arkady L. Shane <ashejn@russianfedora.ru> - 3.6.4-2.R
 - fix https://bugzilla.gnome.org/show_bug.cgi?id=643111
+
+* Mon Jan 14 2013 Dan Horák <dan[at]danny.cz> - 3.6.4-2
+- fix filelist for s390(x) (and ppc/ppc64 in RHEL)
+
+* Thu Jan 10 2013 Rui Matos <rmatos@redhat.com> - 3.6.4-1
+- Update to 3.6.4
+- Rebase 0001-power-and-media-keys-Use-logind-for-suspending-and-r.patch
+
+* Thu Dec 20 2012 Rui Matos <rmatos@redhat.com> - 3.6.3-2
+- Add patch to fix bug #873103
 
 * Wed Nov 14 2012 Kalev Lember <kalevlember@gmail.com> - 3.6.3-1
 - Update to 3.6.3
