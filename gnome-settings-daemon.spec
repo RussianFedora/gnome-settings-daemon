@@ -1,6 +1,6 @@
 Name:           gnome-settings-daemon
 Version:        3.6.4
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        The daemon sharing settings from GNOME to GTK+/KDE applications
 
 Group:          System Environment/Daemons
@@ -10,6 +10,8 @@ URL:            http://download.gnome.org/sources/%{name}
 Source:         http://download.gnome.org/sources/%{name}/3.6/%{name}-%{version}.tar.xz
 # disable wacom for ppc/ppc64 (used on RHEL)
 Patch0:         %{name}-3.5.4-ppc-no-wacom.patch
+# https://bugzilla.redhat.com/show_bug.cgi?id=816764
+Patch1: g-s-d-3.6.4-reset-a11y-keyboard.patch
 # https://bugzilla.gnome.org/show_bug.cgi?id=680689
 Patch2: 0001-power-and-media-keys-Use-logind-for-suspending-and-r.patch
 # Wacom OSD window
@@ -86,6 +88,7 @@ The %{name}-updates package contains the updates plugin for %{name}
 %endif
 
 %patch2 -p1
+%patch1 -p1
 %patch3 -p1 -b .wacom-osd-window
 %patch4 -p1
 %patch5 -p1
@@ -269,6 +272,9 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_datadir}/dbus-1/interfaces/org.gnome.SettingsDaemonUpdates.xml
 
 %changelog
+* Mon Jan 28 2013 Bastien Nocera <bnocera@redhat.com> 3.6.4-3.R
+- Disable AccessX on exit if no settings changed (#816764)
+
 * Tue Jan 15 2013 Arkady L. Shane <ashejn@russianfedora.ru> - 3.6.4-2.R
 - fix https://bugzilla.gnome.org/show_bug.cgi?id=643111
 
