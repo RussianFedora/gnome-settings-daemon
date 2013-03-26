@@ -7,7 +7,7 @@ Group:          System Environment/Daemons
 License:        GPLv2+
 URL:            http://download.gnome.org/sources/%{name}
 #VCS: git:git://git.gnome.org/gnome-settings-daemon
-Source:         http://download.gnome.org/sources/%{name}/3.7/%{name}-%{version}.tar.xz
+Source:         http://download.gnome.org/sources/%{name}/3.8/%{name}-%{version}.tar.xz
 # disable wacom for ppc/ppc64 (used on RHEL)
 Patch0:         %{name}-3.5.4-ppc-no-wacom.patch
 # fix https://bugzilla.gnome.org/show_bug.cgi?id=685676
