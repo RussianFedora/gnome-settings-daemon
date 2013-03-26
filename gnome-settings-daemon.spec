@@ -1,31 +1,22 @@
 Name:           gnome-settings-daemon
-Version:        3.6.4
-Release:        3%{?dist}
+Version:        3.8.0
+Release:        1%{?dist}
 Summary:        The daemon sharing settings from GNOME to GTK+/KDE applications
 
 Group:          System Environment/Daemons
 License:        GPLv2+
 URL:            http://download.gnome.org/sources/%{name}
 #VCS: git:git://git.gnome.org/gnome-settings-daemon
-Source:         http://download.gnome.org/sources/%{name}/3.6/%{name}-%{version}.tar.xz
+Source:         http://download.gnome.org/sources/%{name}/3.7/%{name}-%{version}.tar.xz
 # disable wacom for ppc/ppc64 (used on RHEL)
 Patch0:         %{name}-3.5.4-ppc-no-wacom.patch
-# https://bugzilla.redhat.com/show_bug.cgi?id=816764
-Patch1: g-s-d-3.6.4-reset-a11y-keyboard.patch
-# https://bugzilla.gnome.org/show_bug.cgi?id=680689
-Patch2: 0001-power-and-media-keys-Use-logind-for-suspending-and-r.patch
-# Wacom OSD window
-# https://bugzilla.gnome.org/show_bug.cgi?id=679062
-Patch3: 0001-wacom-implement-OSD-help-window.patch
-# https://bugzilla.redhat.com/show_bug.cgi?id=873103
-Patch4: 0001-keyboard-Make-ibus-libpinyin-the-default-engine-for-.patch
-# fix https://bugzilla.gnome.org/show_bug.cgi?id=643111
-Patch5: gnome-settings-daemon-XI-RawEvents.patch
+# fix https://bugzilla.gnome.org/show_bug.cgi?id=685676
+Patch1:		gnome-settings-daemon-XI-RawEvents.patch
 
 Requires: control-center-filesystem
 
 BuildRequires:  dbus-glib-devel
-BuildRequires:  gtk3-devel >= 2.99.3
+BuildRequires:  gtk3-devel >= 3.7.8
 BuildRequires:  gnome-desktop3-devel >= 3.1.4
 BuildRequires:  xorg-x11-proto-devel libXxf86misc-devel
 BuildRequires:  gstreamer-devel
@@ -44,6 +35,7 @@ BuildRequires:  PackageKit-glib-devel
 BuildRequires:  cups-devel
 BuildRequires:  upower-devel
 BuildRequires:  libgudev1-devel
+BuildRequires:  librsvg2-devel
 BuildRequires:  nss-devel
 BuildRequires:  colord-devel >= 0.1.12
 BuildRequires:  lcms2-devel >= 2.2
@@ -55,7 +47,7 @@ BuildRequires:  ibus-devel
 BuildRequires:  libxslt
 BuildRequires:  docbook-style-xsl
 %ifnarch s390 s390x %{?rhel:ppc ppc64}
-BuildRequires:  libwacom-devel
+BuildRequires:  libwacom-devel >= 0.7
 BuildRequires:  xorg-x11-drv-wacom-devel
 %endif
 
@@ -87,11 +79,7 @@ The %{name}-updates package contains the updates plugin for %{name}
 %patch0 -p1 -b .ppc-no-wacom
 %endif
 
-%patch2 -p1
-%patch1 -p1
-%patch3 -p1 -b .wacom-osd-window
-%patch4 -p1
-%patch5 -p1
+%patch1 -p1 -b .XI-RawEvents
 
 autoreconf -i -f
 
@@ -143,14 +131,6 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_libdir}/gnome-settings-daemon-3.0/a11y-keyboard.gnome-settings-plugin
 %{_libdir}/gnome-settings-daemon-3.0/liba11y-keyboard.so
 
-# The automount plugin is a separate executable used in fallback
-# mode only
-%{_libexecdir}/gnome-fallback-mount-helper
-%{_sysconfdir}/xdg/autostart/gnome-fallback-mount-helper.desktop
-
-%{_libdir}/gnome-settings-daemon-3.0/background.gnome-settings-plugin
-%{_libdir}/gnome-settings-daemon-3.0/libbackground.so
-
 %{_libdir}/gnome-settings-daemon-3.0/clipboard.gnome-settings-plugin
 %{_libdir}/gnome-settings-daemon-3.0/libclipboard.so
 
@@ -179,8 +159,14 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_libdir}/gnome-settings-daemon-3.0/libprint-notifications.so
 %{_datadir}/glib-2.0/schemas/org.gnome.settings-daemon.plugins.print-notifications.gschema.xml
 
-%{_libdir}/gnome-settings-daemon-3.0/smartcard.gnome-settings-plugin
-%{_libdir}/gnome-settings-daemon-3.0/libsmartcard.so
+%{_libdir}/gnome-settings-daemon-3.0/remote-display.gnome-settings-plugin
+%{_libdir}/gnome-settings-daemon-3.0/libremote-display.so
+
+%{_libdir}/gnome-settings-daemon-3.0/screensaver-proxy.gnome-settings-plugin
+%{_libdir}/gnome-settings-daemon-3.0/libscreensaver-proxy.so
+
+#{_libdir}/gnome-settings-daemon-3.0/smartcard.gnome-settings-plugin
+#{_libdir}/gnome-settings-daemon-3.0/libsmartcard.so
 
 %{_libdir}/gnome-settings-daemon-3.0/sound.gnome-settings-plugin
 %{_libdir}/gnome-settings-daemon-3.0/libsound.so
@@ -217,9 +203,6 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_libdir}/gnome-settings-daemon-3.0/libcursor.so
 %{_libdir}/gnome-settings-daemon-3.0/cursor.gnome-settings-plugin
 
-%{_libdir}/gnome-settings-daemon-3.0/libscreensaver-proxy.so
-%{_libdir}/gnome-settings-daemon-3.0/screensaver-proxy.gnome-settings-plugin
-
 %{_libdir}/gnome-settings-daemon-3.0/libgsd.so
 
 %{_libexecdir}/gnome-settings-daemon
@@ -252,41 +235,62 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %endif
 %{_libexecdir}/gsd-test-a11y-keyboard
 %{_libexecdir}/gsd-test-a11y-settings
-%{_libexecdir}/gsd-test-background
+%{_libexecdir}/gsd-test-cursor
+%{_libexecdir}/gsd-test-housekeeping
 %{_libexecdir}/gsd-test-input-helper
 %{_libexecdir}/gsd-test-keyboard
 %{_libexecdir}/gsd-test-media-keys
 %{_libexecdir}/gsd-test-mouse
 %{_libexecdir}/gsd-test-orientation
-%{_libexecdir}/gsd-test-power
 %{_libexecdir}/gsd-test-print-notifications
+%{_libexecdir}/gsd-test-remote-display
 %{_libexecdir}/gsd-test-screensaver-proxy
-%{_libexecdir}/gsd-test-smartcard
+#{_libexecdir}/gsd-test-smartcard
 %{_libexecdir}/gsd-test-sound
+%{_libexecdir}/gsd-test-xrandr
 %{_libexecdir}/gsd-test-xsettings
 
 %files updates
 %{_libdir}/gnome-settings-daemon-3.0/updates.gnome-settings-plugin
 %{_libdir}/gnome-settings-daemon-3.0/libupdates.so
 %{_datadir}/glib-2.0/schemas/org.gnome.settings-daemon.plugins.updates.gschema.xml
-%{_datadir}/dbus-1/interfaces/org.gnome.SettingsDaemonUpdates.xml
 
 %changelog
-* Mon Jan 28 2013 Bastien Nocera <bnocera@redhat.com> 3.6.4-3.R
-- Disable AccessX on exit if no settings changed (#816764)
+* Tue Mar 26 2013 Arkady L. Shane <ashejn@russianfedora.ru> - 3.8.0-1
+- update to 3.8.0
+- fix https://bugzilla.gnome.org/show_bug.cgi?id=685676
 
-* Tue Jan 15 2013 Arkady L. Shane <ashejn@russianfedora.ru> - 3.6.4-2.R
-- fix https://bugzilla.gnome.org/show_bug.cgi?id=643111
+* Tue Mar 19 2013 Matthias Clasen <mclasen@redhat.com> - 3.7.92-1
+- Update to 3.7.92
 
-* Mon Jan 14 2013 Dan Horák <dan[at]danny.cz> - 3.6.4-2
+* Tue Mar  5 2013 Matthias Clasen <mclasen@redhat.com> - 3.7.91-1
+- Update to 3.7.91
+
+* Wed Feb 20 2013 Richard Hughes <rhughes@redhat.com> - 3.7.90-1
+- Update to 3.7.90
+
+* Thu Feb 07 2013 Richard Hughes <rhughes@redhat.com> - 3.7.5.1-1
+- Update to 3.7.5.1
+
+* Wed Feb 06 2013 Debarshi Ray <rishi@fedoraproject.org> - 3.7.5-2
+- Bump the gtk3 BuildRequires
+
+* Tue Feb 05 2013 Richard Hughes <rhughes@redhat.com> - 3.7.5-1
+- Update to 3.7.5
+
+* Wed Jan 16 2013 Richard Hughes <hughsient@gmail.com> - 3.7.4-1
+- Update to 3.7.4
+
+* Mon Dec 31 2012 Dan Horák <dan[at]danny.cz> - 3.7.3-2
 - fix filelist for s390(x) (and ppc/ppc64 in RHEL)
 
-* Thu Jan 10 2013 Rui Matos <rmatos@redhat.com> - 3.6.4-1
-- Update to 3.6.4
-- Rebase 0001-power-and-media-keys-Use-logind-for-suspending-and-r.patch
+* Thu Dec 20 2012 Kalev Lember <kalevlember@gmail.com> - 3.7.3-1
+- Update to 3.7.3
+- Adjust the spec file for the (temporarly) disabled smartcard plugin
 
-* Thu Dec 20 2012 Rui Matos <rmatos@redhat.com> - 3.6.3-2
-- Add patch to fix bug #873103
+* Tue Nov 20 2012 Richard Hughes <hughsient@gmail.com> - 3.7.1-1
+- Update to 3.7.1
+- Remove upstreamed patches
 
 * Wed Nov 14 2012 Kalev Lember <kalevlember@gmail.com> - 3.6.3-1
 - Update to 3.6.3
@@ -298,7 +302,7 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 * Thu Oct 18 2012 Matthias Clasen <mclasen@redhat.com> - 3.6.1-3
 - Fix a typo in the suspend patch (#858259)
 
-* Tue Oct 08 2012 Dan Horák <dan[at]danny.cz> - 3.6.1-2
+* Mon Oct 08 2012 Dan Horák <dan[at]danny.cz> - 3.6.1-2
 - fix build on s390(x)
 
 * Mon Oct 08 2012 Bastien Nocera <bnocera@redhat.com> 3.6.1-1
@@ -888,7 +892,7 @@ http://bugzilla.gnome.org/show_bug.cgi?id=580761 for details
 * Tue Sep 30 2008 Matthias Clasen <mclasen@redhat.com> - 2.24.0-3
 - Fix the picking up of the gdm keyboard layout
 
-* Wed Sep 28 2008 Ray Strode <rstrode@redhat.com> - 2.24.0-2
+* Sun Sep 28 2008 Ray Strode <rstrode@redhat.com> - 2.24.0-2
 - Don't draw background twice at startup
 
 * Tue Sep 23 2008 Matthias Clasen <mclasen@redhat.com> - 2.24.0-1
@@ -906,7 +910,7 @@ http://bugzilla.gnome.org/show_bug.cgi?id=580761 for details
 * Fri Sep  5 2008 Matthias Clasen <mclasen@redhat.com> - 2.23.91-5
 - Try harder to use the keyboard layout that gdm tells us
 
-* Tue Sep 04 2008 Soren Sandmann <sandmann@redhat.com> - 2.23.91-4
+* Thu Sep 04 2008 Soren Sandmann <sandmann@redhat.com> - 2.23.91-4
 - Use the fn-F7 key, not the F7 key.
 
 * Wed Sep 03 2008 Soren Sandmann <sandmann@redhat.com> - 2.23.91-3
