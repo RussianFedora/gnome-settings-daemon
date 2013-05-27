@@ -1,17 +1,17 @@
 Name:           gnome-settings-daemon
-Version:        3.8.0
-Release:        1%{?dist}
+Version:        3.8.3
+Release:        0.1.cf544fc%{?dist}
 Summary:        The daemon sharing settings from GNOME to GTK+/KDE applications
 
 Group:          System Environment/Daemons
 License:        GPLv2+
 URL:            http://download.gnome.org/sources/%{name}
 #VCS: git:git://git.gnome.org/gnome-settings-daemon
-Source:         http://download.gnome.org/sources/%{name}/3.8/%{name}-%{version}.tar.xz
+Source:         http://download.gnome.org/sources/%{name}/3.8/%{name}-%{version}-cf544fc.tar.xz
 # disable wacom for ppc/ppc64 (used on RHEL)
 Patch0:         %{name}-3.5.4-ppc-no-wacom.patch
-# fix https://bugzilla.gnome.org/show_bug.cgi?id=685676
-Patch1:		gnome-settings-daemon-XI-RawEvents.patch
+# fedora has newer different default ibus engines for Chinese and Japanese
+Patch1:         %{name}-ibus-kkc-libpinyin.patch
 
 Requires: control-center-filesystem
 
@@ -45,6 +45,7 @@ BuildRequires:  libXtst-devel
 BuildRequires:  libxkbfile-devel
 BuildRequires:  ibus-devel
 BuildRequires:  libxslt
+BuildRequires:  gnome-common
 BuildRequires:  docbook-style-xsl
 %ifnarch s390 s390x %{?rhel:ppc ppc64}
 BuildRequires:  libwacom-devel >= 0.7
@@ -78,16 +79,14 @@ The %{name}-updates package contains the updates plugin for %{name}
 %if 0%{?rhel}
 %patch0 -p1 -b .ppc-no-wacom
 %endif
-
-%patch1 -p1 -b .XI-RawEvents
-
-autoreconf -i -f
+%patch1 -p1 -b .ibus-anthy-pinyin
 
 %build
+(if ! test -x configure; then NOCONFIGURE=1 ./autogen.sh; fi;
 %configure --disable-static \
            --enable-profiling \
            --enable-packagekit \
-           --enable-systemd
+           --enable-systemd )
 make %{?_smp_mflags}
 
 
@@ -208,7 +207,7 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_libexecdir}/gnome-settings-daemon
 %{_libexecdir}/gsd-locate-pointer
 %{_libexecdir}/gsd-printer
-%{_libexecdir}/gsd-input-sources-switcher
+#%{_libexecdir}/gsd-input-sources-switcher
 
 %{_datadir}/gnome-settings-daemon/
 %{_sysconfdir}/xdg/autostart/gnome-settings-daemon.desktop
@@ -256,9 +255,21 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_datadir}/glib-2.0/schemas/org.gnome.settings-daemon.plugins.updates.gschema.xml
 
 %changelog
-* Tue Mar 26 2013 Arkady L. Shane <ashejn@russianfedora.ru> - 3.8.0-1
-- update to 3.8.0
-- fix https://bugzilla.gnome.org/show_bug.cgi?id=685676
+* Mon May 27 2013 Arkady L. Shane <ashejn@russianfedora.ru> - 3.8.3-0.1.cf544fc.R
+- update to last snapshot
+
+* Tue May 14 2013 Richard Hughes <rhughes@redhat.com> - 3.8.2-1
+- Update to 3.8.2
+
+* Thu May  9 2013 Jens Petersen <petersen@redhat.com> - 3.8.1-2
+- default ibus engine in Fedora is now kkc for Japanese
+  and libpinyin for Chinese (#948117)
+
+* Tue Apr 16 2013 Richard Hughes <rhughes@redhat.com> - 3.8.1-1
+- Update to 3.8.1
+
+* Tue Mar 26 2013 Richard Hughes <rhughes@redhat.com> - 3.8.0-1
+- Update to 3.8.0
 
 * Tue Mar 19 2013 Matthias Clasen <mclasen@redhat.com> - 3.7.92-1
 - Update to 3.7.92
