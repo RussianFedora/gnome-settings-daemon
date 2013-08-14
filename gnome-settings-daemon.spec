@@ -1,19 +1,39 @@
 Name:           gnome-settings-daemon
-Version:        3.8.3
-Release:        0.1.cf544fc%{?dist}
+Version:        3.8.4
+Release:        2.1%{?dist}
 Summary:        The daemon sharing settings from GNOME to GTK+/KDE applications
 
 Group:          System Environment/Daemons
 License:        GPLv2+
 URL:            http://download.gnome.org/sources/%{name}
 #VCS: git:git://git.gnome.org/gnome-settings-daemon
-Source:         http://download.gnome.org/sources/%{name}/3.8/%{name}-%{version}-cf544fc.tar.xz
+Source:         http://download.gnome.org/sources/%{name}/3.8/%{name}-%{version}.tar.xz
 # disable wacom for ppc/ppc64 (used on RHEL)
 Patch0:         %{name}-3.5.4-ppc-no-wacom.patch
-# fedora has newer different default ibus engines for Chinese and Japanese
-Patch1:         %{name}-ibus-kkc-libpinyin.patch
+# g-i-s takes this role now
+Patch1:         0001-keyboard-Stop-adding-locale-based-input-sources-from.patch
+
+# https://bugzilla.redhat.com/show_bug.cgi?id=886845
+# https://bugzilla.gnome.org/show_bug.cgi?id=678623
+Patch2:         0001-print-notifications-Move-translator-comments-to-appr.patch
+Patch3:         0002-print-notifications-Coding-style-fixes.patch
+Patch4:         0003-print-notifications-Use-better-debugging-messages.patch
+Patch5:         0004-print-notifications-Honor-CUPS-default-port-number.patch
+Patch6:         0005-print-notifications-Connect-to-message-bus-asynchron.patch
+Patch7:         0006-print-notifications-Cancel-subscription-to-DBus-sign.patch
+Patch8:         0007-print-notifications-Stop-renewing-of-CUPS-subscripti.patch
+Patch9:         0008-print-notifications-Don-t-use-DBus-recipient-URI-for.patch
+Patch10:        0009-print-notifications-Don-t-run-connection-test-for-lo.patch
+Patch11:        0010-print-notifications-Use-IPP-method-for-getting-IPP-n.patch
+Patch12:        0011-print-notifications-Regularly-check-for-notification.patch
+Patch13:        0012-print-notifications-Show-final-job-states-for-remote.patch
+
+# fix non-latin hotkeys in some applications
+Patch90:	non-eng-hotkeys.patch
+
 
 Requires: control-center-filesystem
+Requires: colord
 
 BuildRequires:  dbus-glib-devel
 BuildRequires:  gtk3-devel >= 3.7.8
@@ -45,7 +65,6 @@ BuildRequires:  libXtst-devel
 BuildRequires:  libxkbfile-devel
 BuildRequires:  ibus-devel
 BuildRequires:  libxslt
-BuildRequires:  gnome-common
 BuildRequires:  docbook-style-xsl
 %ifnarch s390 s390x %{?rhel:ppc ppc64}
 BuildRequires:  libwacom-devel >= 0.7
@@ -79,14 +98,29 @@ The %{name}-updates package contains the updates plugin for %{name}
 %if 0%{?rhel}
 %patch0 -p1 -b .ppc-no-wacom
 %endif
-%patch1 -p1 -b .ibus-anthy-pinyin
+%patch1 -p1
+%patch2 -p1 -b .translator-comments
+%patch3 -p1 -b .style-fixes
+%patch4 -p1 -b .debugging-messages
+%patch5 -p1 -b .CUPS-default-port
+%patch6 -p1 -b .connect-asynchronously
+%patch7 -p1 -b .cancel-subscription
+%patch8 -p1 -b .renew-subscription
+%patch9 -p1 -b .don-t-use-dbus
+%patch10 -p1 -b .connection-test
+%patch11 -p1 -b .use-IPP-method
+%patch12 -p1 -b .check-for-notifications
+%patch13 -p1 -b .final-job-states
+
+%patch90 -p1 -b .hotkeys
+
+autoreconf -i -f
 
 %build
-(if ! test -x configure; then NOCONFIGURE=1 ./autogen.sh; fi;
 %configure --disable-static \
            --enable-profiling \
            --enable-packagekit \
-           --enable-systemd )
+           --enable-systemd
 make %{?_smp_mflags}
 
 
@@ -205,9 +239,9 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_libdir}/gnome-settings-daemon-3.0/libgsd.so
 
 %{_libexecdir}/gnome-settings-daemon
+%{_libexecdir}/gnome-settings-daemon-localeexec
 %{_libexecdir}/gsd-locate-pointer
 %{_libexecdir}/gsd-printer
-#%{_libexecdir}/gsd-input-sources-switcher
 
 %{_datadir}/gnome-settings-daemon/
 %{_sysconfdir}/xdg/autostart/gnome-settings-daemon.desktop
@@ -255,8 +289,28 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_datadir}/glib-2.0/schemas/org.gnome.settings-daemon.plugins.updates.gschema.xml
 
 %changelog
-* Mon May 27 2013 Arkady L. Shane <ashejn@russianfedora.ru> - 3.8.3-0.1.cf544fc.R
-- update to last snapshot
+* Wed Aug 14 2013 Arkady L. Shane <ashejn@russianfedora.ru> - 3.8.4-2.1
+- fix non-latin hotkeys in some applications
+
+* Wed Aug  7 2013 Marek Kasik <mkasik@redhat.com> - 3.8.4-2
+- Backport fixes for getting of notifications from remote CUPS servers
+- Resolves: #886845
+
+* Fri Jul 19 2013 Bastien Nocera <bnocera@redhat.com> 3.8.4-1
+- Update to 3.8.4
+
+* Sun Jun 16 2013 Kalev Lember <kalevlember@gmail.com> - 3.8.3-3
+- Backport more upstream fixes for the localeexec helper (#974778)
+
+* Mon Jun 10 2013 Matthias Clasen <mclasen@redhat.com> - 3.8.3-2
+- Avoid calling setenv after threads are initialized (#919855)
+
+* Fri Jun  7 2013 Rui Matos <rmatos@redhat.com> - 3.8.3-1
+- Update to 3.8.3
+
+* Fri May 17 2013 Rui Matos <rmatos@redhat.com>
+- Add a patch to stop adding input sources automatically based on
+  locale since that's now gnome-initial-setup's job
 
 * Tue May 14 2013 Richard Hughes <rhughes@redhat.com> - 3.8.2-1
 - Update to 3.8.2

@@ -1,0 +1,56 @@
+diff -rupN gnome-settings-daemon-3.8.4.orig/plugins/keyboard/gsd-keyboard-manager.c gnome-settings-daemon-3.8.4/plugins/keyboard/gsd-keyboard-manager.c
+--- gnome-settings-daemon-3.8.4.orig/plugins/keyboard/gsd-keyboard-manager.c	2013-07-19 20:07:29.000000000 +0400
++++ gnome-settings-daemon-3.8.4/plugins/keyboard/gsd-keyboard-manager.c	2013-08-09 17:26:03.873497600 +0400
+@@ -148,6 +148,8 @@ static const gchar introspection_xml[] =
+ 
+ static gpointer manager_object = NULL;
+ 
++static guint group_position = 0;
++
+ static void
+ init_builder_with_sources (GVariantBuilder *builder,
+                            GSettings       *settings)
+@@ -692,10 +694,9 @@ upload_xkb_description (const gchar
+         XkbDescRec *xkb_desc;
+         gchar *rules_file;
+ 
+-        /* The layout we want is always in the first XKB group index
+-         * so we should enforce it to make sure we never end up with
+-         * the wrong one. */
+-        XkbLockGroup (display, XkbUseCoreKbd, 0);
++        /* The index of layout we want is saved in the group_position
++         * variable. */
++        XkbLockGroup (display, XkbUseCoreKbd, group_position);
+ 
+         /* Upload it to the X server using the same method as setxkbmap */
+         xkb_desc = XkbGetKeyboardByName (display,
+@@ -728,10 +729,13 @@ build_xkb_group_string (const gchar *use
+         gsize length = 0;
+         guint commas = 2;
+ 
+-        if (latin)
++        if (latin) {
+                 length += strlen (latin);
+-        else
++                group_position = 1;
++        } else {
+                 commas -= 1;
++                group_position = 0;
++        }
+ 
+         if (locale)
+                 length += strlen (locale);
+@@ -743,11 +747,11 @@ build_xkb_group_string (const gchar *use
+         string = malloc (length);
+ 
+         if (locale && latin)
+-                sprintf (string, "%s,%s,%s", user, locale, latin);
++                sprintf (string, "%s,%s,%s", latin, user, locale);
+         else if (locale)
+                 sprintf (string, "%s,%s", user, locale);
+         else if (latin)
+-                sprintf (string, "%s,%s", user, latin);
++                sprintf (string, "%s,%s", latin, user);
+         else
+                 sprintf (string, "%s", user);
+ 

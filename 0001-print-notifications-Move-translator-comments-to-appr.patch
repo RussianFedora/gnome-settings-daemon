@@ -1,0 +1,40 @@
+From af7fdef550e5979f39feaca8f891fcf2d6eb5432 Mon Sep 17 00:00:00 2001
+From: Marek Kasik <mkasik@redhat.com>
+Date: Tue, 30 Jul 2013 10:48:48 +0200
+Subject: [PATCH 01/12] print-notifications: Move translator comments to
+ appropriate positions
+
+Move translator comments 1 line above the actual strings so that
+translators see them.
+---
+ plugins/print-notifications/gsd-print-notifications-manager.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/plugins/print-notifications/gsd-print-notifications-manager.c b/plugins/print-notifications/gsd-print-notifications-manager.c
+index 442e1f7..5bb9408 100644
+--- a/plugins/print-notifications/gsd-print-notifications-manager.c
++++ b/plugins/print-notifications/gsd-print-notifications-manager.c
+@@ -442,18 +442,18 @@ on_cups_notification (GDBusConnection *connection,
+                 cupsFreeDests (manager->priv->num_dests, manager->priv->dests);
+                 manager->priv->num_dests = cupsGetDests (&manager->priv->dests);
+ 
+-                /* Translators: New printer has been added */
+                 if (is_local_dest (printer_name,
+                                    manager->priv->dests,
+                                    manager->priv->num_dests)) {
++                        /* Translators: New printer has been added */
+                         primary_text = g_strdup (_("Printer added"));
+                         secondary_text = g_strdup (printer_name);
+                 }
+         } else if (g_strcmp0 (signal_name, "PrinterDeleted") == 0) {
+-                /* Translators: A printer has been removed */
+                 if (is_local_dest (printer_name,
+                                    manager->priv->dests,
+                                    manager->priv->num_dests)) {
++                        /* Translators: A printer has been removed */
+                         primary_text = g_strdup (_("Printer removed"));
+                         secondary_text = g_strdup (printer_name);
+                 }
+-- 
+1.8.3.1
+

@@ -1,0 +1,65 @@
+From d264695c827a7702006d09c2dff853b6be454155 Mon Sep 17 00:00:00 2001
+From: Marek Kasik <mkasik@redhat.com>
+Date: Wed, 31 Jul 2013 10:53:49 +0200
+Subject: [PATCH 04/12] print-notifications: Honor CUPS' default port number
+
+Don't default to "631" for default port when testing connection
+to remote CUPS server.
+---
+ .../gsd-print-notifications-manager.c                    | 16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
+
+diff --git a/plugins/print-notifications/gsd-print-notifications-manager.c b/plugins/print-notifications/gsd-print-notifications-manager.c
+index 954a919..3615c82 100644
+--- a/plugins/print-notifications/gsd-print-notifications-manager.c
++++ b/plugins/print-notifications/gsd-print-notifications-manager.c
+@@ -954,17 +954,20 @@ renew_subscription_with_connection_test (gpointer user_data)
+ {
+         GSocketClient *client;
+         gchar         *address;
++        int            port;
+ 
+-        address = g_strdup_printf ("%s:%d", cupsServer (), ippPort ());
++        port = ippPort ();
++
++        address = g_strdup_printf ("%s:%d", cupsServer (), port);
+ 
+         if (address && address[0] != '/') {
+                 client = g_socket_client_new ();
+ 
+-                g_debug ("Initiating test connection to CUPS server \'%s:%d\'.", cupsServer (), ippPort ());
++                g_debug ("Initiating test connection to CUPS server \'%s:%d\'.", cupsServer (), port);
+ 
+                 g_socket_client_connect_to_host_async (client,
+                                                        address,
+-                                                       631,
++                                                       port,
+                                                        NULL,
+                                                        renew_subscription_with_connection_test_cb,
+                                                        user_data);
+@@ -1017,18 +1020,19 @@ cups_connection_test (gpointer user_data)
+         GsdPrintNotificationsManager *manager = (GsdPrintNotificationsManager *) user_data;
+         GSocketClient                *client;
+         gchar                        *address;
++        int                           port = ippPort ();
+ 
+         if (!manager->priv->dests) {
+-                address = g_strdup_printf ("%s:%d", cupsServer (), ippPort ());
++                address = g_strdup_printf ("%s:%d", cupsServer (), port);
+ 
+                 if (address && address[0] != '/') {
+                         client = g_socket_client_new ();
+ 
+-                        g_debug ("Initiating test connection to CUPS server \'%s:%d\'.", cupsServer (), ippPort ());
++                        g_debug ("Initiating test connection to CUPS server \'%s:%d\'.", cupsServer (), port);
+ 
+                         g_socket_client_connect_to_host_async (client,
+                                                                address,
+-                                                               631,
++                                                               port,
+                                                                NULL,
+                                                                cups_connection_test_cb,
+                                                                manager);
+-- 
+1.8.3.1
+
