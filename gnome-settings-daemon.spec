@@ -1,60 +1,48 @@
+%global gnome_desktop_version 3.9.0
+%global libgweather_version 3.9.5
+%global gsettings_desktop_schemas_version 3.9.91
+%global geoclue_version 1.99.3
+%global geocode_glib_version 3.10.0
+
 Name:           gnome-settings-daemon
-Version:        3.8.4
-Release:        2.2%{?dist}
+Version:        3.10.1
+Release:        2%{?dist}
 Summary:        The daemon sharing settings from GNOME to GTK+/KDE applications
 
 Group:          System Environment/Daemons
 License:        GPLv2+
 URL:            http://download.gnome.org/sources/%{name}
 #VCS: git:git://git.gnome.org/gnome-settings-daemon
-Source:         http://download.gnome.org/sources/%{name}/3.8/%{name}-%{version}.tar.xz
+Source:         http://download.gnome.org/sources/%{name}/3.10/%{name}-%{version}.tar.xz
 # disable wacom for ppc/ppc64 (used on RHEL)
 Patch0:         %{name}-3.5.4-ppc-no-wacom.patch
-# g-i-s takes this role now
-Patch1:         0001-keyboard-Stop-adding-locale-based-input-sources-from.patch
 
-# https://bugzilla.redhat.com/show_bug.cgi?id=886845
-# https://bugzilla.gnome.org/show_bug.cgi?id=678623
-Patch2:         0001-print-notifications-Move-translator-comments-to-appr.patch
-Patch3:         0002-print-notifications-Coding-style-fixes.patch
-Patch4:         0003-print-notifications-Use-better-debugging-messages.patch
-Patch5:         0004-print-notifications-Honor-CUPS-default-port-number.patch
-Patch6:         0005-print-notifications-Connect-to-message-bus-asynchron.patch
-Patch7:         0006-print-notifications-Cancel-subscription-to-DBus-sign.patch
-Patch8:         0007-print-notifications-Stop-renewing-of-CUPS-subscripti.patch
-Patch9:         0008-print-notifications-Don-t-use-DBus-recipient-URI-for.patch
-Patch10:        0009-print-notifications-Don-t-run-connection-test-for-lo.patch
-Patch11:        0010-print-notifications-Use-IPP-method-for-getting-IPP-n.patch
-Patch12:        0011-print-notifications-Regularly-check-for-notification.patch
-Patch13:        0012-print-notifications-Show-final-job-states-for-remote.patch
+# already upstream, fixes launching gnome-software from the notification
+Patch1:         0001-updates-Correctly-start-gnome-software-when-clicking.patch
 
-# fix non-latin hotkeys in some applications
-Patch90:	non-eng-hotkeys.patch
+# non-latin hotkeys
+Patch2:		non-eng-hotkeys.patch
 
-
-Requires: control-center-filesystem
-Requires: colord
-
-BuildRequires:  dbus-glib-devel
 BuildRequires:  gtk3-devel >= 3.7.8
-BuildRequires:  gnome-desktop3-devel >= 3.1.4
+BuildRequires:  gnome-desktop3-devel >= %{gnome_desktop_version}
 BuildRequires:  xorg-x11-proto-devel libXxf86misc-devel
-BuildRequires:  gstreamer-devel
-BuildRequires:  gstreamer-plugins-base-devel
 BuildRequires:  pulseaudio-libs-devel
 BuildRequires:  libgnomekbd-devel
 BuildRequires:  libnotify-devel
 BuildRequires:  gettext intltool
 BuildRequires:  fontconfig-devel
+BuildRequires:  geoclue2-devel >= %{geoclue_version}
+BuildRequires:  geocode-glib-devel >= %{geocode_glib_version}
 BuildRequires:  libcanberra-devel
 BuildRequires:  polkit-devel
 BuildRequires:  autoconf automake libtool
 BuildRequires:  libxklavier-devel
-BuildRequires:  gsettings-desktop-schemas-devel >= 0.1.7
+BuildRequires:  gsettings-desktop-schemas-devel >= %{gsettings_desktop_schemas_version}
 BuildRequires:  PackageKit-glib-devel
 BuildRequires:  cups-devel
 BuildRequires:  upower-devel
 BuildRequires:  libgudev1-devel
+BuildRequires:  libgweather-devel >= %{libgweather_version}
 BuildRequires:  librsvg2-devel
 BuildRequires:  nss-devel
 BuildRequires:  colord-devel >= 0.1.12
@@ -71,6 +59,14 @@ BuildRequires:  libwacom-devel >= 0.7
 BuildRequires:  xorg-x11-drv-wacom-devel
 %endif
 
+Requires: colord
+Requires: control-center-filesystem
+Requires: geoclue2 >= %{geoclue_version}
+Requires: geocode-glib%{?_isa} >= %{geocode_glib_version}
+Requires: gnome-desktop3%{?_isa} >= %{gnome_desktop_version}
+Requires: gsettings-desktop-schemas%{?_isa} >= %{gsettings_desktop_schemas_version}
+Requires: libgweather%{?_isa} >= %{libgweather_version}
+
 %description
 A daemon to share settings from GNOME to other applications. It also
 handles global keybindings, as well as a number of desktop-wide settings.
@@ -79,7 +75,6 @@ handles global keybindings, as well as a number of desktop-wide settings.
 Summary:        Development files for %{name}
 Group:          Development/Libraries
 Requires:       %{name} = %{version}-%{release}
-Requires:       dbus-glib-devel
 
 %description    devel
 The %{name}-devel package contains libraries and header files for
@@ -98,21 +93,9 @@ The %{name}-updates package contains the updates plugin for %{name}
 %if 0%{?rhel}
 %patch0 -p1 -b .ppc-no-wacom
 %endif
-%patch1 -p1
-%patch2 -p1 -b .translator-comments
-%patch3 -p1 -b .style-fixes
-%patch4 -p1 -b .debugging-messages
-%patch5 -p1 -b .CUPS-default-port
-%patch6 -p1 -b .connect-asynchronously
-%patch7 -p1 -b .cancel-subscription
-%patch8 -p1 -b .renew-subscription
-%patch9 -p1 -b .don-t-use-dbus
-%patch10 -p1 -b .connection-test
-%patch11 -p1 -b .use-IPP-method
-%patch12 -p1 -b .check-for-notifications
-%patch13 -p1 -b .final-job-states
 
-%patch90 -p1 -b .hotkeys
+%patch1 -p1 -b .updates-fix-notification
+%patch2 -p1 -b .non-latin
 
 autoreconf -i -f
 
@@ -156,8 +139,6 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 
 %files -f %{name}.lang
 %doc AUTHORS COPYING NEWS
-%dir %{_sysconfdir}/gnome-settings-daemon
-%dir %{_sysconfdir}/gnome-settings-daemon/xrandr
 
 # list plugins explicitly, so we notice if one goes missing
 # some of these don't have a separate gschema
@@ -166,6 +147,10 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 
 %{_libdir}/gnome-settings-daemon-3.0/clipboard.gnome-settings-plugin
 %{_libdir}/gnome-settings-daemon-3.0/libclipboard.so
+
+%{_libdir}/gnome-settings-daemon-3.0/datetime.gnome-settings-plugin
+%{_libdir}/gnome-settings-daemon-3.0/libdatetime.so
+%{_datadir}/glib-2.0/schemas/org.gnome.settings-daemon.plugins.datetime.gschema.xml
 
 %{_libdir}/gnome-settings-daemon-3.0/housekeeping.gnome-settings-plugin
 %{_libdir}/gnome-settings-daemon-3.0/libhousekeeping.so
@@ -195,11 +180,14 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_libdir}/gnome-settings-daemon-3.0/remote-display.gnome-settings-plugin
 %{_libdir}/gnome-settings-daemon-3.0/libremote-display.so
 
+%{_libdir}/gnome-settings-daemon-3.0/librfkill.so
+%{_libdir}/gnome-settings-daemon-3.0/rfkill.gnome-settings-plugin
+
 %{_libdir}/gnome-settings-daemon-3.0/screensaver-proxy.gnome-settings-plugin
 %{_libdir}/gnome-settings-daemon-3.0/libscreensaver-proxy.so
 
-#{_libdir}/gnome-settings-daemon-3.0/smartcard.gnome-settings-plugin
-#{_libdir}/gnome-settings-daemon-3.0/libsmartcard.so
+%{_libdir}/gnome-settings-daemon-3.0/smartcard.gnome-settings-plugin
+%{_libdir}/gnome-settings-daemon-3.0/libsmartcard.so
 
 %{_libdir}/gnome-settings-daemon-3.0/sound.gnome-settings-plugin
 %{_libdir}/gnome-settings-daemon-3.0/libsound.so
@@ -211,6 +199,7 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_libdir}/gnome-settings-daemon-3.0/wacom.gnome-settings-plugin
 %{_libdir}/gnome-settings-daemon-3.0/libgsdwacom.so
 %{_libexecdir}/gsd-wacom-led-helper
+%{_libexecdir}/gsd-wacom-oled-helper
 %{_datadir}/polkit-1/actions/org.gnome.settings-daemon.plugins.wacom.policy
 %endif
 
@@ -269,6 +258,7 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_libexecdir}/gsd-test-a11y-keyboard
 %{_libexecdir}/gsd-test-a11y-settings
 %{_libexecdir}/gsd-test-cursor
+%{_libexecdir}/gsd-test-datetime
 %{_libexecdir}/gsd-test-housekeeping
 %{_libexecdir}/gsd-test-input-helper
 %{_libexecdir}/gsd-test-keyboard
@@ -277,9 +267,11 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_libexecdir}/gsd-test-orientation
 %{_libexecdir}/gsd-test-print-notifications
 %{_libexecdir}/gsd-test-remote-display
+%{_libexecdir}/gsd-test-rfkill
 %{_libexecdir}/gsd-test-screensaver-proxy
-#{_libexecdir}/gsd-test-smartcard
+%{_libexecdir}/gsd-test-smartcard
 %{_libexecdir}/gsd-test-sound
+%{_libexecdir}/gsd-test-updates
 %{_libexecdir}/gsd-test-xrandr
 %{_libexecdir}/gsd-test-xsettings
 
@@ -289,31 +281,66 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_datadir}/glib-2.0/schemas/org.gnome.settings-daemon.plugins.updates.gschema.xml
 
 %changelog
-* Wed Aug 21 2013 Arkady L. Shane <ashejn@russianfedora.ru> - 3.8.4-2.2
-- update locale patch
+* Thu Oct 31 2013 Arkady L. Shane <ashejn@russianfedora.ru> - 3.10.1-2.R
+- fix usage of non-latin hotkeys in some applications like LibreOffice
 
-* Wed Aug 14 2013 Arkady L. Shane <ashejn@russianfedora.ru> - 3.8.4-2.1
-- fix non-latin hotkeys in some applications
+* Thu Oct 17 2013 Richard Hughes <rhughes@redhat.com> - 3.10.1-2
+- Backport a patch from master to fix launching gnome-software from the
+  notification.
+- Resolves: https://bugzilla.gnome.org/show_bug.cgi?id=710038
 
-* Wed Aug  7 2013 Marek Kasik <mkasik@redhat.com> - 3.8.4-2
-- Backport fixes for getting of notifications from remote CUPS servers
-- Resolves: #886845
+* Tue Oct 15 2013 Richard Hughes <rhughes@redhat.com> - 3.10.1-1
+- Update to 3.10.1
 
-* Fri Jul 19 2013 Bastien Nocera <bnocera@redhat.com> 3.8.4-1
-- Update to 3.8.4
+* Fri Oct 11 2013 Richard Hughes <rhughes@redhat.com> - 3.10.0-3
+- Apply the previous patch on Fedora too.
 
-* Sun Jun 16 2013 Kalev Lember <kalevlember@gmail.com> - 3.8.3-3
-- Backport more upstream fixes for the localeexec helper (#974778)
+* Fri Oct 11 2013 Richard Hughes <rhughes@redhat.com> - 3.10.0-2
+- Grab a patch from upstream to fix the multiple notifications about updates.
+- Resolves: https://bugzilla.redhat.com/show_bug.cgi?id=1009132
 
-* Mon Jun 10 2013 Matthias Clasen <mclasen@redhat.com> - 3.8.3-2
-- Avoid calling setenv after threads are initialized (#919855)
+* Tue Sep 24 2013 Kalev Lember <kalevlember@gmail.com> - 3.10.0-1
+- Update to 3.10.0
 
-* Fri Jun  7 2013 Rui Matos <rmatos@redhat.com> - 3.8.3-1
-- Update to 3.8.3
+* Wed Sep 18 2013 Kalev Lember <kalevlember@gmail.com> - 3.9.92-1
+- Update to 3.9.92
 
-* Fri May 17 2013 Rui Matos <rmatos@redhat.com>
-- Add a patch to stop adding input sources automatically based on
-  locale since that's now gnome-initial-setup's job
+* Tue Sep 17 2013 Richard Hughes <rhughes@redhat.com> - 3.9.91.1-2
+- Grab a patch from upstream so that the offline updates feature can
+  actually work when reboot returns with success.
+
+* Tue Sep 03 2013 Matthias Clasen <mclasen@redhat.com> - 3.9.91.1-1
+- Update to 3.9.91.1
+
+* Tue Sep 03 2013 Kalev Lember <kalevlember@gmail.com> - 3.9.91-1
+- Update to 3.9.91
+- Include the new datetime plugin
+
+* Fri Aug 23 2013 Kalev Lember <kalevlember@gmail.com> - 3.9.90-2
+- Keep middle click paste enabled for now
+
+* Thu Aug 22 2013 Kalev Lember <kalevlember@gmail.com> - 3.9.90-1
+- Update to 3.9.90
+
+* Fri Aug 09 2013 Kalev Lember <kalevlember@gmail.com> - 3.9.5-1
+- Update to 3.9.5
+- Remove empty /etc/gnome-settings-daemon directory
+- Install new rfkill plugin and add back the smartcard plugin
+
+* Tue Jul 30 2013 Richard Hughes <rhughes@redhat.com> - 3.9.3-3
+- Rebuild for colord soname bump
+
+* Mon Jul 22 2013 Bastien Nocera <bnocera@redhat.com> 3.9.3-2
+- Remove obsolete GStreamer 0.10 BRs
+
+* Thu Jun 20 2013 Kalev Lember <kalevlember@gmail.com> - 3.9.3-1
+- Update to 3.9.3
+
+* Sun Jun 02 2013 Kalev Lember <kalevlember@gmail.com> - 3.9.2-1
+- Update to 3.9.2
+- Drop the ibus-kkc-libpinyin patch; the hardcoded input sources
+  list is gone from g-s-d
+- Set the minimum required gnome-desktop3 version
 
 * Tue May 14 2013 Richard Hughes <rhughes@redhat.com> - 3.8.2-1
 - Update to 3.8.2
