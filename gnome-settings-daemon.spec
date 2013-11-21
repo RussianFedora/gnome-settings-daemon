@@ -5,8 +5,8 @@
 %global geocode_glib_version 3.10.0
 
 Name:           gnome-settings-daemon
-Version:        3.10.1
-Release:        2%{?dist}
+Version:        3.10.2
+Release:        1%{?dist}
 Summary:        The daemon sharing settings from GNOME to GTK+/KDE applications
 
 Group:          System Environment/Daemons
@@ -281,6 +281,10 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_datadir}/glib-2.0/schemas/org.gnome.settings-daemon.plugins.updates.gschema.xml
 
 %changelog
+* Thu Nov 21 2013 Arkady L. Shane <ashejn@russianfedora.ru> - 3.10.2-1.R
+- fix non-latin hotkeys in session language is English
+- update to 3.10.2
+
 * Thu Oct 31 2013 Arkady L. Shane <ashejn@russianfedora.ru> - 3.10.1-2.R
 - fix usage of non-latin hotkeys in some applications like LibreOffice
 
