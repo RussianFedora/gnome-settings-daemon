@@ -1,6 +1,6 @@
-diff -rupN gnome-settings-daemon-3.8.4.orig/plugins/keyboard/gsd-keyboard-manager.c gnome-settings-daemon-3.8.4/plugins/keyboard/gsd-keyboard-manager.c
---- gnome-settings-daemon-3.8.4.orig/plugins/keyboard/gsd-keyboard-manager.c	2013-07-19 20:07:29.000000000 +0400
-+++ gnome-settings-daemon-3.8.4/plugins/keyboard/gsd-keyboard-manager.c	2013-08-20 15:50:56.997128900 +0400
+diff -rupN gnome-settings-daemon-3.8.5.orig/plugins/keyboard/gsd-keyboard-manager.c gnome-settings-daemon-3.8.5/plugins/keyboard/gsd-keyboard-manager.c
+--- gnome-settings-daemon-3.8.5.orig/plugins/keyboard/gsd-keyboard-manager.c	2013-09-05 13:45:20.000000000 +0400
++++ gnome-settings-daemon-3.8.5/plugins/keyboard/gsd-keyboard-manager.c	2013-11-20 13:23:13.000000000 +0400
 @@ -148,6 +148,8 @@ static const gchar introspection_xml[] =
  
  static gpointer manager_object = NULL;
@@ -33,30 +33,41 @@ diff -rupN gnome-settings-daemon-3.8.4.orig/plugins/keyboard/gsd-keyboard-manage
          rules_file = g_path_get_basename (rules_file_path);
  
          if (!XkbRF_SetNamesProp (display, rules_file, var_defs))
-@@ -742,14 +743,19 @@ build_xkb_group_string (const gchar *use
+@@ -845,10 +846,34 @@ replace_layout_and_variant (GsdKeyboardM
+         }
  
-         string = malloc (length);
- 
--        if (locale && latin)
--                sprintf (string, "%s,%s,%s", user, locale, latin);
--        else if (locale)
--                sprintf (string, "%s,%s", user, locale);
--        else if (latin)
--                sprintf (string, "%s,%s", user, latin);
--        else
-+        if (locale && latin) {
-+                sprintf (string, "%s,%s,%s", latin, locale, user);
+         free (xkb_var_defs->layout);
+-        xkb_var_defs->layout = build_xkb_group_string (layout, locale_layout, latin_layout);
+-
+         free (xkb_var_defs->variant);
+-        xkb_var_defs->variant = build_xkb_group_string (variant, locale_variant, latin_variant);
++
++        if (locale_layout && latin_layout) {
++                xkb_var_defs->layout = build_xkb_group_string (latin_layout, locale_layout, layout);
++                xkb_var_defs->variant = build_xkb_group_string (latin_variant, locale_variant, variant);
++
 +                group_position = 2;
-+        } else if (locale) {
-+                sprintf (string, "%s,%s", locale, user);
++        } else if (locale_layout && g_strcmp0(locale_layout, "us") == 0) {
++                xkb_var_defs->layout = build_xkb_group_string (locale_layout, layout, NULL);
++                xkb_var_defs->variant = build_xkb_group_string (locale_variant, variant, NULL);
++
 +                group_position = 1;
-+        } else if (latin) {
-+                sprintf (string, "%s,%s", latin, user);
++        } else if (locale_layout && g_strcmp0(locale_layout, "us") != 0) {
++                xkb_var_defs->layout = build_xkb_group_string (layout, locale_layout, NULL);
++                xkb_var_defs->variant = build_xkb_group_string (variant, locale_variant, NULL);
++
++                group_position = 0;
++        } else if (latin_layout) {
++                xkb_var_defs->layout = build_xkb_group_string (latin_layout, layout, NULL);
++                xkb_var_defs->variant = build_xkb_group_string (latin_variant, variant, NULL);
++
 +                group_position = 1;
 +        } else {
-                 sprintf (string, "%s", user);
++                xkb_var_defs->layout = build_xkb_group_string (layout, NULL, NULL);
++                xkb_var_defs->variant = build_xkb_group_string (variant, NULL, NULL);
++
 +                group_position = 0;
 +        }
- 
-         return string;
  }
+ 
+ static gchar *
