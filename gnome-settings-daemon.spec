@@ -1,6 +1,6 @@
 Name:           gnome-settings-daemon
-Version:        3.8.4
-Release:        2.2%{?dist}
+Version:        3.8.5
+Release:        1%{?dist}
 Summary:        The daemon sharing settings from GNOME to GTK+/KDE applications
 
 Group:          System Environment/Daemons
@@ -13,24 +13,8 @@ Patch0:         %{name}-3.5.4-ppc-no-wacom.patch
 # g-i-s takes this role now
 Patch1:         0001-keyboard-Stop-adding-locale-based-input-sources-from.patch
 
-# https://bugzilla.redhat.com/show_bug.cgi?id=886845
-# https://bugzilla.gnome.org/show_bug.cgi?id=678623
-Patch2:         0001-print-notifications-Move-translator-comments-to-appr.patch
-Patch3:         0002-print-notifications-Coding-style-fixes.patch
-Patch4:         0003-print-notifications-Use-better-debugging-messages.patch
-Patch5:         0004-print-notifications-Honor-CUPS-default-port-number.patch
-Patch6:         0005-print-notifications-Connect-to-message-bus-asynchron.patch
-Patch7:         0006-print-notifications-Cancel-subscription-to-DBus-sign.patch
-Patch8:         0007-print-notifications-Stop-renewing-of-CUPS-subscripti.patch
-Patch9:         0008-print-notifications-Don-t-use-DBus-recipient-URI-for.patch
-Patch10:        0009-print-notifications-Don-t-run-connection-test-for-lo.patch
-Patch11:        0010-print-notifications-Use-IPP-method-for-getting-IPP-n.patch
-Patch12:        0011-print-notifications-Regularly-check-for-notification.patch
-Patch13:        0012-print-notifications-Show-final-job-states-for-remote.patch
-
 # fix non-latin hotkeys in some applications
 Patch90:	non-eng-hotkeys.patch
-
 
 Requires: control-center-filesystem
 Requires: colord
@@ -99,19 +83,6 @@ The %{name}-updates package contains the updates plugin for %{name}
 %patch0 -p1 -b .ppc-no-wacom
 %endif
 %patch1 -p1
-%patch2 -p1 -b .translator-comments
-%patch3 -p1 -b .style-fixes
-%patch4 -p1 -b .debugging-messages
-%patch5 -p1 -b .CUPS-default-port
-%patch6 -p1 -b .connect-asynchronously
-%patch7 -p1 -b .cancel-subscription
-%patch8 -p1 -b .renew-subscription
-%patch9 -p1 -b .don-t-use-dbus
-%patch10 -p1 -b .connection-test
-%patch11 -p1 -b .use-IPP-method
-%patch12 -p1 -b .check-for-notifications
-%patch13 -p1 -b .final-job-states
-
 %patch90 -p1 -b .hotkeys
 
 autoreconf -i -f
@@ -289,10 +260,14 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_datadir}/glib-2.0/schemas/org.gnome.settings-daemon.plugins.updates.gschema.xml
 
 %changelog
-* Wed Aug 21 2013 Arkady L. Shane <ashejn@russianfedora.ru> - 3.8.4-2.2
+* Thu Nov 21 2013 Arkady L. Shane <ashejn@russianfedora.ru> - 3.8.5-1.R
+- update to 3.8.5
+- fix non-latin hotkeys if session language is english
+
+* Wed Aug 21 2013 Arkady L. Shane <ashejn@russianfedora.ru> - 3.8.4-2.2.R
 - update locale patch
 
-* Wed Aug 14 2013 Arkady L. Shane <ashejn@russianfedora.ru> - 3.8.4-2.1
+* Wed Aug 14 2013 Arkady L. Shane <ashejn@russianfedora.ru> - 3.8.4-2.1.R
 - fix non-latin hotkeys in some applications
 
 * Wed Aug  7 2013 Marek Kasik <mkasik@redhat.com> - 3.8.4-2
