@@ -1,0 +1,49 @@
+From 408e7889063f08427a11a08d8c122a66dcab6ecc Mon Sep 17 00:00:00 2001
+From: Ryan Lortie <desrt@desrt.ca>
+Date: Thu, 14 Nov 2013 11:54:27 -0500
+Subject: [PATCH] xsettings: export Gtk/ShellShowsDesktop setting
+
+Export a property for whether the desktop icons are shown or not.  This
+will allow Gtk to decide if we should show the 'Desktop' item in the
+places sidebar, according to if the user has enabled their desktop icons
+or not.  We use the value of the GSettings key 'show-desktop-icons' from
+'org.gnome.desktop.background'.
+
+https://bugzilla.gnome.org/show_bug.cgi?id=712302
+---
+ plugins/xsettings/gsd-xsettings-manager.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/plugins/xsettings/gsd-xsettings-manager.c b/plugins/xsettings/gsd-xsettings-manager.c
+index cad40d0..91bc00d 100644
+--- a/plugins/xsettings/gsd-xsettings-manager.c
++++ b/plugins/xsettings/gsd-xsettings-manager.c
+@@ -48,6 +48,7 @@
+ #define GNOME_XSETTINGS_MANAGER_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), GNOME_TYPE_XSETTINGS_MANAGER, GnomeXSettingsManagerPrivate))
+ 
+ #define MOUSE_SETTINGS_SCHEMA     "org.gnome.settings-daemon.peripherals.mouse"
++#define BACKGROUND_SETTINGS_SCHEMA "org.gnome.desktop.background"
+ #define INTERFACE_SETTINGS_SCHEMA "org.gnome.desktop.interface"
+ #define SOUND_SETTINGS_SCHEMA     "org.gnome.desktop.sound"
+ #define PRIVACY_SETTINGS_SCHEMA     "org.gnome.desktop.privacy"
+@@ -355,6 +356,8 @@ static TranslationEntry translations [] = {
+         { "org.gnome.settings-daemon.peripherals.mouse", "double-click",   "Net/DoubleClickTime",  translate_int_int },
+         { "org.gnome.settings-daemon.peripherals.mouse", "drag-threshold", "Net/DndDragThreshold", translate_int_int },
+ 
++        { "org.gnome.desktop.background", "show-desktop-icons",    "Gtk/ShellShowsDesktop",   translate_bool_int },
++
+         { "org.gnome.desktop.interface", "gtk-color-palette",      "Gtk/ColorPalette",        translate_string_string },
+         { "org.gnome.desktop.interface", "font-name",              "Gtk/FontName",            translate_string_string },
+         { "org.gnome.desktop.interface", "gtk-key-theme",          "Gtk/KeyThemeName",        translate_string_string },
+@@ -965,6 +968,8 @@ gnome_xsettings_manager_start (GnomeXSettingsManager *manager,
+         g_hash_table_insert (manager->priv->settings,
+                              MOUSE_SETTINGS_SCHEMA, g_settings_new (MOUSE_SETTINGS_SCHEMA));
+         g_hash_table_insert (manager->priv->settings,
++                             BACKGROUND_SETTINGS_SCHEMA, g_settings_new (BACKGROUND_SETTINGS_SCHEMA));
++        g_hash_table_insert (manager->priv->settings,
+                              INTERFACE_SETTINGS_SCHEMA, g_settings_new (INTERFACE_SETTINGS_SCHEMA));
+         g_hash_table_insert (manager->priv->settings,
+                              SOUND_SETTINGS_SCHEMA, g_settings_new (SOUND_SETTINGS_SCHEMA));
+-- 
+1.8.4.2
+

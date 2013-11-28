@@ -1,0 +1,30 @@
+From 8c40541f56fadc67f3fae90256d6214a0e83706a Mon Sep 17 00:00:00 2001
+From: Richard Hughes <richard@hughsie.com>
+Date: Mon, 25 Nov 2013 14:35:07 +0000
+Subject: [PATCH] updates: Remove the unconditional clearing of the offline
+ updates message
+
+The offline updates status file needs to be around for the failed text and also
+if we're using gnome-software to review the changed updates. We're already
+removing it in the callback even for the non-gnome-software case.
+---
+ plugins/updates/gsd-updates-manager.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/plugins/updates/gsd-updates-manager.c b/plugins/updates/gsd-updates-manager.c
+index 901840e..08b20c6 100644
+--- a/plugins/updates/gsd-updates-manager.c
++++ b/plugins/updates/gsd-updates-manager.c
+@@ -1270,9 +1270,6 @@ check_offline_update_cb (gpointer user_data)
+                 message = ngettext ("An important OS update has been installed.",
+                                     "Important OS updates have been installed.",
+                                     num_packages);
+-
+-                /* no need to keep the file around anymore */
+-                clear_offline_updates_message ();
+         } else {
+                 /* get error details */
+                 manager->priv->offline_update_error = pk_error_new ();
+-- 
+1.8.4.2
+
