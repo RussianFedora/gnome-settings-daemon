@@ -1,33 +1,23 @@
-%global gnome_desktop_version 3.9.0
+%global gnome_desktop_version 3.11.1
 %global libgweather_version 3.9.5
 %global gsettings_desktop_schemas_version 3.9.91
 %global geoclue_version 1.99.3
 %global geocode_glib_version 3.10.0
 
 Name:           gnome-settings-daemon
-Version:        3.10.2
-Release:        3%{?dist}
+Version:        3.11.90
+Release:        2%{?dist}
 Summary:        The daemon sharing settings from GNOME to GTK+/KDE applications
 
 Group:          System Environment/Daemons
 License:        GPLv2+
 URL:            http://download.gnome.org/sources/%{name}
 #VCS: git:git://git.gnome.org/gnome-settings-daemon
-Source:         http://download.gnome.org/sources/%{name}/3.10/%{name}-%{version}.tar.xz
+Source:         http://download.gnome.org/sources/%{name}/3.11/%{name}-%{version}.tar.xz
 # disable wacom for ppc/ppc64 (used on RHEL)
 Patch0:         %{name}-3.5.4-ppc-no-wacom.patch
 
-# already upstream, fixes launching gnome-software from the notification
-Patch1:         0001-updates-Correctly-start-gnome-software-when-clicking.patch
-
-# already upstream, fixes review in gnome-software
-Patch2:         0001-updates-Remove-the-unconditional-clearing-of-the-off.patch
-
-# upstream fix
-Patch3:         0001-xsettings-export-Gtk-ShellShowsDesktop-setting.patch
-
-# non-latin hotkeys
-Patch90:	non-eng-hotkeys.patch
+Patch9:		non-eng-hotkeys.patch
 
 BuildRequires:  gtk3-devel >= 3.7.8
 BuildRequires:  gnome-desktop3-devel >= %{gnome_desktop_version}
@@ -60,6 +50,7 @@ BuildRequires:  libxkbfile-devel
 BuildRequires:  ibus-devel
 BuildRequires:  libxslt
 BuildRequires:  docbook-style-xsl
+BuildRequires:  xkeyboard-config-devel
 %ifnarch s390 s390x %{?rhel:ppc ppc64}
 BuildRequires:  libwacom-devel >= 0.7
 BuildRequires:  xorg-x11-drv-wacom-devel
@@ -100,10 +91,7 @@ The %{name}-updates package contains the updates plugin for %{name}
 %patch0 -p1 -b .ppc-no-wacom
 %endif
 
-%patch1 -p1 -b .updates-fix-notification
-%patch2 -p1 -b .updates-fix-review
-%patch3 -p1 -b .shows-desktop
-%patch90 -p1 -b .non-latin
+%patch9 -p1 -b .non-eng-hotkeys
 
 autoreconf -i -f
 
@@ -185,9 +173,6 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_libdir}/gnome-settings-daemon-3.0/libprint-notifications.so
 %{_datadir}/glib-2.0/schemas/org.gnome.settings-daemon.plugins.print-notifications.gschema.xml
 
-%{_libdir}/gnome-settings-daemon-3.0/remote-display.gnome-settings-plugin
-%{_libdir}/gnome-settings-daemon-3.0/libremote-display.so
-
 %{_libdir}/gnome-settings-daemon-3.0/librfkill.so
 %{_libdir}/gnome-settings-daemon-3.0/rfkill.gnome-settings-plugin
 
@@ -240,6 +225,7 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_libexecdir}/gsd-locate-pointer
 %{_libexecdir}/gsd-printer
 
+/usr/lib/udev/rules.d/*.rules
 %{_datadir}/gnome-settings-daemon/
 %{_sysconfdir}/xdg/autostart/gnome-settings-daemon.desktop
 %{_datadir}/icons/hicolor/*/apps/gsd-xrandr.*
@@ -274,7 +260,6 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_libexecdir}/gsd-test-mouse
 %{_libexecdir}/gsd-test-orientation
 %{_libexecdir}/gsd-test-print-notifications
-%{_libexecdir}/gsd-test-remote-display
 %{_libexecdir}/gsd-test-rfkill
 %{_libexecdir}/gsd-test-screensaver-proxy
 %{_libexecdir}/gsd-test-smartcard
@@ -289,25 +274,31 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_datadir}/glib-2.0/schemas/org.gnome.settings-daemon.plugins.updates.gschema.xml
 
 %changelog
-* Tue Nov 26 2013 Matthias Clasen <mclasen@redhat.com> - 3.10.2-3.R
-- Export a shell-shows-desktop xsetting
+* Tue Mar  4 2014 Arkady L. Shane <ashejn@russianfedora.ru> - 3.11.90-2.R
+- apply patch for non-eng hotkeys
 
-* Mon Nov 25 2013 Richard Hughes <rhughes@redhat.com> - 3.10.2-2.R
-- Backport a patch to make 'Review' work when using gnome-software
+* Wed Feb 19 2014 Richard Hughes <rhughes@redhat.com> - 3.11.90-2
+- Rebuilt for gnome-desktop soname bump
 
-* Thu Nov 21 2013 Arkady L. Shane <ashejn@russianfedora.ru> - 3.10.2-1.R
-- fix non-latin hotkeys in session language is English
-- update to 3.10.2
+* Tue Feb 18 2014 Richard Hughes <rhughes@redhat.com> - 3.11.90-1
+- Update to 3.11.90
 
-* Thu Oct 31 2013 Arkady L. Shane <ashejn@russianfedora.ru> - 3.10.1-2.R
-- fix usage of non-latin hotkeys in some applications like LibreOffice
+* Tue Feb 04 2014 Richard Hughes <rhughes@redhat.com> - 3.11.5-1
+- Update to 3.11.5
 
-* Thu Oct 17 2013 Richard Hughes <rhughes@redhat.com> - 3.10.1-2
-- Backport a patch from master to fix launching gnome-software from the
-  notification.
-- Resolves: https://bugzilla.gnome.org/show_bug.cgi?id=710038
+* Thu Jan 30 2014 Richard Hughes <rhughes@redhat.com> - 3.11.3-2
+- Rebuild for libpackagekit-glib soname bump
 
-* Tue Oct 15 2013 Richard Hughes <rhughes@redhat.com> - 3.10.1-1
+* Tue Dec 17 2013 Richard Hughes <rhughes@redhat.com> - 3.11.3-1
+- Update to 3.11.3
+
+* Mon Nov 25 2013 Richard Hughes <rhughes@redhat.com> - 3.11.2-1
+- Update to 3.11.2
+
+* Thu Oct 31 2013 Florian Müllner <fmuellner@redhat.com> - 3.11.1-1
+- Update to 3.11.1
+
+* Mon Oct 28 2013 Richard Hughes <rhughes@redhat.com> - 3.10.1-1
 - Update to 3.10.1
 
 * Fri Oct 11 2013 Richard Hughes <rhughes@redhat.com> - 3.10.0-3
