@@ -1,5 +1,5 @@
 Name:           gnome-settings-daemon
-Version:        3.8.5
+Version:        3.8.6.1
 Release:        1%{?dist}
 Summary:        The daemon sharing settings from GNOME to GTK+/KDE applications
 
@@ -260,6 +260,9 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_datadir}/glib-2.0/schemas/org.gnome.settings-daemon.plugins.updates.gschema.xml
 
 %changelog
+* Wed Mar 19 2014 Arkady L. Shane <ashejn@russianfedora.ru> - 3.8.6.1-1.R
+- update to 3.8.6.1
+
 * Thu Nov 21 2013 Arkady L. Shane <ashejn@russianfedora.ru> - 3.8.5-1.R
 - update to 3.8.5
 - fix non-latin hotkeys if session language is english
