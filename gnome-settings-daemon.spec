@@ -20,12 +20,6 @@ Patch0:         %{name}-3.5.4-ppc-no-wacom.patch
 # already upstream, fixes launching gnome-software from the notification
 Patch1:         0001-updates-Correctly-start-gnome-software-when-clicking.patch
 
-# already upstream, fixes review in gnome-software
-Patch2:         0001-updates-Remove-the-unconditional-clearing-of-the-off.patch
-
-# upstream fix
-Patch3:         0001-xsettings-export-Gtk-ShellShowsDesktop-setting.patch
-
 # non-latin hotkeys
 Patch90:	non-eng-hotkeys.patch
 
@@ -101,8 +95,6 @@ The %{name}-updates package contains the updates plugin for %{name}
 %endif
 
 %patch1 -p1 -b .updates-fix-notification
-%patch2 -p1 -b .updates-fix-review
-%patch3 -p1 -b .shows-desktop
 %patch90 -p1 -b .non-latin
 
 autoreconf -i -f
@@ -289,6 +281,12 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_datadir}/glib-2.0/schemas/org.gnome.settings-daemon.plugins.updates.gschema.xml
 
 %changelog
+* Thu Jul 17 2014 Rex Dieter <rdieter@fedoraproject.org> 3.10.3-2.R
+- rebuild (for pulseaudio, bug #1117683)
+
+* Tue Jun  3 2014 Rui Matos <rmatos@redhat.com> - 3.10.3-1.R
+- Update to 3.10.3
+
 * Tue Nov 26 2013 Matthias Clasen <mclasen@redhat.com> - 3.10.2-3.R
 - Export a shell-shows-desktop xsetting
 
